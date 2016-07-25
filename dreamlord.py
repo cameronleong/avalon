@@ -54,4 +54,4 @@ async def on_ready():
 	await client.change_status(game)
 	
 
-client.run('MjA0MDEwMDMwMTg0Mzk4ODQ4.CmxOpQ.LC5e-JOJiGj4f84RoezbkoHOX5M')
+client.run('YOUR TOKEN HERE')
