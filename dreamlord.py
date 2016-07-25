@@ -5,7 +5,7 @@ import re
 import shelve
 from random import shuffle
 from avalon import *
-from wordgame import *
+#from wordgame import *
 
 client = discord.Client()
 busyChannels = []
@@ -38,9 +38,9 @@ async def on_message(message):
 			await client.send_message(message.channel, "Starting **Guess-the-Word** in `#"+message.channel.name+"`...")
 			await run(client, message)
 			busyChannels.remove(message.channel)
-			
-	if message.content.startswith('!score'):
-		await scoreboard(client, message)"""
+	"""		
+	#if message.content.startswith('!score'):
+	#	await scoreboard(client, message)
 
 	if message.content.startswith('!help'):
 		await client.send_message(message.author, 'Please visit https://cameronleong.github.io/avalon to find out more.')
@@ -54,4 +54,4 @@ async def on_ready():
 	await client.change_status(game)
 	
 
-client.run('YOUR KEY HERE')
+client.run('MjA0MDEwMDMwMTg0Mzk4ODQ4.CmxOpQ.LC5e-JOJiGj4f84RoezbkoHOX5M')

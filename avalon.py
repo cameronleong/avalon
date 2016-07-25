@@ -16,12 +16,13 @@ async def avalon(client, message):			#main loop
 	rules = [] 					#number of players for each quest.
 	roles = {} 					#active roles based on the # of players. it can be changed.
 	canreject = []
+	cantreject = []
 	gamestate = [0,0,1,5,0,0,1] 
 	gamestate[0] = 0
 	boardstate = [":red_circle:",":red_circle:",":red_circle:",":red_circle:",":red_circle:"]
 	
 	if gamestate[0] == 0: await login(client,message,playerlist,gamestate,rules,roles)
-	if gamestate[0] == 2: await night(client,message,playerlist,gamestate,rules,roles,canreject)
+	if gamestate[0] == 2: await night(client,message,playerlist,gamestate,rules,roles,canreject,cantreject)
 	#gamestate[1] = randint(0,len(playerlist)-1)	#leadercounter
 	#gamestate[2] = 1				#questcounter
 	#gamestate[3] = 5				#passcounter
@@ -32,7 +33,7 @@ async def avalon(client, message):			#main loop
 		if gamestate[0] == 3: await quest(client,message,playerlist,gamestate,rules,roles,boardstate,names)
 		if gamestate[0] == 4: await teamvote(client,message,playerlist,gamestate,rules,roles,boardstate,names)
 		if gamestate[0] == 5: await privatevote(client,message,playerlist,gamestate,rules,roles,boardstate,names,canreject)
-	if gamestate[0] == 6: await gameover(client,message,playerlist,gamestate,rules,roles,boardstate,names,canreject)
+	if gamestate[0] == 6: await gameover(client,message,playerlist,gamestate,rules,roles,boardstate,names,canreject,cantreject)
 	
 async def login(client,message,playerlist,gamestate,rules,roles):	
 	#Login Phase
@@ -103,7 +104,7 @@ async def login(client,message,playerlist,gamestate,rules,roles):
 			await client.send_message(message.channel, stopStr)
 			gamestate[0] = 0
 
-async def night(client,message,playerlist,gamestate,rules,roles,canreject):
+async def night(client,message,playerlist,gamestate,rules,roles,canreject,cantreject):
 	await client.send_message(message.channel, nightStr)
 	shuffledlist = copy.deepcopy(playerlist)		#these are the things we need
 	shuffle(shuffledlist)
@@ -135,11 +136,13 @@ async def night(client,message,playerlist,gamestate,rules,roles,canreject):
 	for key in roles:
 		#print(str(roles[key].name)+" is "+str(key))	#Cheat code to reveal all roles for debugging purposes
 		if key == "Galahad, Loyal Servant of Arthur" or key == "Tristan, Loyal Servant of Arthur" or key == "Guinevere, Loyal Servant of Arthur" or key == "Lamorak, Loyal Servant of Arthur":
+			cantreject.append(roles[key])
 			await client.send_message(roles[key],loyalDM.format(roles[key].name,key))	
 		if key == "Agravain, Minion of Mordred":
 			canreject.append(roles[key])
 			await client.send_message(roles[key],minionDM.format(roles[key].name,key,toString(evillist)))
 		if key == "Merlin":
+			cantreject.append(roles[key])
 			await client.send_message(roles[key],merlinDM.format(roles[key].name,key,toString(merlinlist)))
 		if key == "The Assassin":
 			canreject.append(roles[key])
@@ -151,6 +154,7 @@ async def night(client,message,playerlist,gamestate,rules,roles,canreject):
 			canreject.append(roles[key])
 			await client.send_message(roles[key],morganaDM.format(roles[key].name,key,toString(evillist)))
 		if key == "Percival":
+			cantreject.append(roles[key])
 			await client.send_message(roles[key],percivalDM.format(roles[key].name,key,toString(percivallist)))
 	await client.send_message(message.channel, night2Str)
 	gamestate[0] = 3
@@ -327,7 +331,7 @@ async def privatevote(client,message,playerlist,gamestate,rules,roles,boardstate
 		else:
 			gamestate[0] = 3
 
-async def gameover(client,message,playerlist,gamestate,rules,roles,boardstate,names,canreject):
+async def gameover(client,message,playerlist,gamestate,rules,roles,boardstate,names,canreject,cantreject):
 	def assassincheck(msg):
 			if msg.content.startswith('!assassinate') and msg.author == roles["The Assassin"]:
 				return True
@@ -341,18 +345,60 @@ async def gameover(client,message,playerlist,gamestate,rules,roles,boardstate,na
 		if ass.content.startswith('!assassinate'):
 			asslist = ass.content.split()
 			if roles["Merlin"].mention == asslist[-1]:
-				await client.send_message(message.channel,"**Evil** Wins")
+				await client.send_message(message.channel,"Merlin has been assassinated!\n\n")
+				await client.send_message(message.channel,":smiling_imp: **Evil** Wins :smiling_imp:")
+				for player in canreject:
+					await addscore(client,message,player)
 			else:
-				await client.send_message(message.channel,"GOT THE WRONG GUY SON")
-				await client.send_message(message.channel,"**Good** Wins")
+				await client.send_message(message.channel,"GOT THE WRONG GUY SON\n\n")
+				await client.send_message(message.channel,":angel: **Good** Wins :angel: ")
+				for player in cantreject:
+					await addscore(client,message,player)
 			
 	elif gamestate[5] == 3:
-		await client.send_message(message.channel,"**Evil** Wins")
+		await client.send_message(message.channel,":smiling_imp: **Evil** Wins :smiling_imp: ")
+		for player in canreject:
+			await addscore(client,message,player)
 	elif gamestate[4] != 3 and gamestate[5] != 3:
-		await client.send_message(message.channel,"**Evil** Wins by failure")
+		await client.send_message(message.channel,":smiling_imp: **Evil** Wins by failure :smiling_imp: ")
+		for player in canreject:
+			await addscore(client,message,player)
+	roleStr = "\n"
 	for key in roles:
-		await client.send_message(message.channel,str(roles[key])+" is "+str(key))
-		gamestate[0] = 0
+		#await client.send_message(message.channel,str(roles[key])+" is "+str(key))
+		roleStr += str(roles[key])+" is **"+str(key)+"**\n"
+	roleStr += "\n**30 frickin' dollarydoos** have been credited to members of the winning team.\n\n"
+	await client.send_message(message.channel, roleStr)
+	await client.send_message(message.channel, stopStr)
+	gamestate[0] = 0
+
+async def addscore(client, message, user):
+	score = shelve.open('leaderboard', writeback=True)
+	if user.id in score:
+		current = score[user.id]
+		score[user.id] = current + 30
+	else:
+		score[user.id] = 30
+	#await client.send_message(message.channel, str(user.name)+" now has "+str(score[user.id])+" dollarydoos")
+	score.sync()
+	score.close()
+
+async def scoreboard(client,message):
+	counter = 0
+	scoreStr= "\n         :star: Top 10 Players :star: \n\n"
+	score = shelve.open('leaderboard')
+	klist = score.keys()
+	scoreboard = {}
+	for key in klist:
+		m = discord.utils.get(message.server.members, id=key)
+		scoreboard[m.name] = score[key]
+	
+	for item in sorted(scoreboard, key=scoreboard.get, reverse=True):
+		if counter < 10:
+			scoreStr += ':military_medal: `{:20}{:>4}`\n'.format(str(item),str(scoreboard[item]))
+			counter = counter + 1
+	await client.send_message(message.channel,scoreStr)
+	score.close()	
 	
 async def loadrules(client,message,rules,roles,playerlist,playerno):
 	playersnamestring = "|"
